@@ -34,23 +34,10 @@ module Capybara
       #
       def has_selector?(*args)
         options = if args.last.is_a?(Hash) then args.last else {} end
-        wait_until do
+        synchronize do
           results = all(*args)
-
-          case
-          when results.empty?
-            false
-          when options[:between]
-            options[:between] === results.size
-          when options[:count]
-            options[:count].to_i == results.size
-          when options[:maximum]
-            options[:maximum].to_i >= results.size
-          when options[:minimum]
-            options[:minimum].to_i <= results.size
-          else
-            results.size > 0
-          end or raise ExpectationNotMet
+          query(*args).matches_count?(results) or raise Capybara::ExpectationNotMet
+          results
         end
       rescue Capybara::ExpectationNotMet
         return false
@@ -66,23 +53,10 @@ module Capybara
       #
       def has_no_selector?(*args)
         options = if args.last.is_a?(Hash) then args.last else {} end
-        wait_until do
+        synchronize do
           results = all(*args)
-
-          case
-          when results.empty?
-            true
-          when options[:between]
-            not(options[:between] === results.size)
-          when options[:count]
-            not(options[:count].to_i == results.size)
-          when options[:maximum]
-            not(options[:maximum].to_i >= results.size)
-          when options[:minimum]
-            not(options[:minimum].to_i <= results.size)
-          else
-            results.empty?
-          end or raise ExpectationNotMet
+          query(*args).matches_count?(results) and raise Capybara::ExpectationNotMet
+          results
         end
       rescue Capybara::ExpectationNotMet
         return false
@@ -186,7 +160,7 @@ module Capybara
       def has_text?(content)
         normalized_content = normalize_whitespace(content)
 
-        wait_until do
+        synchronize do
           normalize_whitespace(text).include?(normalized_content) or
           raise ExpectationNotMet
         end
@@ -209,7 +183,7 @@ module Capybara
       def has_no_text?(content)
         normalized_content = normalize_whitespace(content)
 
-        wait_until do
+        synchronize do
           !normalize_whitespace(text).include?(normalized_content) or
           raise ExpectationNotMet
         end
@@ -279,8 +253,13 @@ module Capybara
       #
       #     page.has_field?('Name', :with => 'Jonas')
       #
+      # It is also possible to filter by the field type attribute:
+      #
+      #     page.has_field?('Email', :type => 'email')
+      #
       # @param [String] locator           The label, name or id of a field to check for
       # @option options [String] :with    The text content of the field
+      # @option options [String] :type    The type attribute of the field
       # @return [Boolean]                 Whether it exists
       #
       def has_field?(locator, options={})
@@ -294,6 +273,7 @@ module Capybara
       #
       # @param [String] locator           The label, name or id of a field to check for
       # @option options [String] :with    The text content of the field
+      # @option options [String] :type    The type attribute of the field
       # @return [Boolean]                 Whether it doesn't exist
       #
       def has_no_field?(locator, options={})
@@ -365,13 +345,18 @@ module Capybara
       #
       #     page.has_select?('Language', :selected => ['English', 'German'])
       #
-      # It's also possible to check if a given set of options exists for
+      # It's also possible to check if the exact set of options exists for
       # this select box:
       #
-      #     page.has_select?('Language', :options => ['English', 'German'])
+      #     page.has_select?('Language', :options => ['English', 'German', 'Spanish'])
+      #
+      # You can also check for a partial set of options:
+      #
+      #     page.has_select?('Language', :with_options => ['English', 'German'])
       #
       # @param [String] locator                      The label, name or id of a select box
       # @option options [Array] :options             Options which should be contained in this select box
+      # @option options [Array] :with_options        Partial set of options which should be contained in this select box
       # @option options [String, Array] :selected    Options which should be selected
       # @return [Boolean]                            Whether it exists
       #

@@ -74,7 +74,7 @@ module Capybara
       #
       def value
         if tag_name == 'textarea'
-          native.content
+          native.content.sub(/\A\n/, '')
         elsif tag_name == 'select'
           if native['multiple'] == 'multiple'
             native.xpath(".//option[@selected='selected']").map { |option| option[:value] || option.content  }
@@ -118,14 +118,14 @@ module Capybara
         native[:selected]
       end
 
-    protected
-
-      def find_in_base(selector, xpath)
-        native.xpath(xpath).map { |node| self.class.new(node) }
+      def synchronize
+        yield # simple nodes don't need to wait
       end
 
-      def wait_until
-        yield # simple nodes don't need to wait
+      def resolve(query)
+        native.xpath(query.xpath).map do |node|
+          self.class.new(node)
+        end.select { |node| query.matches_filters?(node) }
       end
     end
   end

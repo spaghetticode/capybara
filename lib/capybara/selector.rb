@@ -80,6 +80,7 @@ Capybara.add_selector(:field) do
   filter(:checked) { |node, value| not(value ^ node.checked?) }
   filter(:unchecked) { |node, value| (value ^ node.checked?) }
   filter(:with) { |node, with| node.value == with }
+  filter(:type) { |node, type| node[:type] == type }
 end
 
 Capybara.add_selector(:fieldset) do
@@ -126,10 +127,14 @@ end
 Capybara.add_selector(:select) do
   xpath { |locator| XPath::HTML.select(locator) }
   failure_message { |node, selector| "no select box with id, name, or label '#{selector.locator}' found" }
-  filter(:options) { |node, options| options.all? { |option| node.first(:option, option) } }
+  filter(:options) do |node, options|
+    actual = node.all(:xpath, './/option').map { |option| option.text }
+    options.sort == actual.sort
+  end
+  filter(:with_options) { |node, options| options.all? { |option| node.first(:option, option) } }
   filter(:selected) do |node, selected|
     actual = node.all(:xpath, './/option').select { |option| option.selected? }.map { |option| option.text }
-    ([selected].flatten - actual).empty?
+    [selected].flatten.sort == actual.sort
   end
 end
 
@@ -137,7 +142,9 @@ Capybara.add_selector(:option) do
   xpath { |locator| XPath::HTML.option(locator) }
   failure_message do |node, selector|
     "no option with text '#{selector.locator}'".tap do |message|
-      message << " in the select box" if node.tag_name == 'select'
+      if node.is_a?(Capybara::Node::Element) and node.tag_name == 'select'
+        message << " in the select box"
+      end
     end
   end
 end

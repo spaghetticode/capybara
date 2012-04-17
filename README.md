@@ -1,6 +1,7 @@
 # Capybara
 
 [![Build Status](https://secure.travis-ci.org/jnicklas/capybara.png)](http://travis-ci.org/jnicklas/capybara)
+[![Dependency Status](https://gemnasium.com/jnicklas/capybara.png)](https://gemnasium.com/jnicklas/capybara)
 
 Capybara helps you test Rails and Rack applications by simulating how a real
 user would interact with your app. It is agnostic about the driver running your
@@ -273,12 +274,6 @@ At the moment, Capybara supports [Selenium 2.0
 *not* Selenium RC. Provided Firefox is installed, everything is set up for you,
 and you should be able to start using Selenium right away.
 
-Capybara can block and wait for Ajax requests to finish after you've interacted
-with the page. To enable this behaviour, set the `:resynchronize` driver
-option to `true`. This should normally not be necessary, since
-Capybara's automatic reloading should take care of any asynchronicity problems.
-See the section on Asynchronous JavaScript for details.
-
 **Note**: drivers which run the server in a different thread may not work share the
 same transaction as your tests, causing data not to be shared between your test
 and test server, see "Transactions and database setup" below.
@@ -301,10 +296,18 @@ And you can use it by:
 Capybara.javascript_driver = :webkit
 ```
 
+### Poltergeist
+
+[Poltergeist](https://github.com/jonleighton/poltergeist) is another
+headless driver which integrates Capybara with
+[PhantomJS](http://phantomjs.org/). It is truly headless, so doesn't
+require Xvfb to run on your CI server. It will also detect and report
+any Javascript errors that happen within the page.
+
 ## The DSL
 
 *A complete reference is available at
-[at rubydoc.info](http://rubydoc.info/github/jnicklas/capybara/master)*.
+[rubydoc.info](http://rubydoc.info/github/jnicklas/capybara/master)*.
 
 **Note**: All searches in Capybara are *case sensitive*. This is because
 Capybara heavily uses XPath, which doesn't support case insensitivity.
@@ -442,7 +445,7 @@ end
 **Note**: `within` will scope the actions to the _first_ (not _any_) element that matches the selector.
 
 There are special methods for restricting the scope to a specific fieldset,
-identified by either an id or the text of the fieldet's legend tag, and to a
+identified by either an id or the text of the fieldset's legend tag, and to a
 specific table, identified by either id or text of the table's caption tag.
 
 ```ruby
@@ -495,7 +498,7 @@ Some Capybara drivers need to run against an actual HTTP server. Capybara takes
 care of this and starts one for you in the same process as your test, but on
 another thread. Selenium is one of those drivers, whereas RackTest is not.
 
-If you are using an SQL database, it is common to run every test in a
+If you are using a SQL database, it is common to run every test in a
 transaction, which is rolled back at the end of the test, rspec-rails does this
 by default out of the box for example. Since transactions are usually not
 shared across threads, this will cause data you have put into the database in
@@ -788,8 +791,8 @@ additional info about how the underlying driver can be configured.
   that depend on the current Date work as expected. This can be problematic,
   since Capybara's Ajax timing uses the system time, resulting in Capybara
   never timing out and just hanging when a failure occurs. It's still possible to
-  use plugins which allow you to travel in time, rather than freeze time.
-  One such plugin is [Timecop](http://github.com/jtrupiano/timecop).
+  use gems which allow you to travel in time, rather than freeze time.
+  One such gem is [Timecop](http://github.com/jtrupiano/timecop).
 
 * When using Rack::Test, beware if attempting to visit absolute URLs. For
   example, a session might not be shared between visits to `posts_path`

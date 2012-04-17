@@ -64,7 +64,11 @@ shared_examples_for 'driver' do
       end
 
       it "should allow retrieval of the value" do
-        @driver.find('//textarea').first.value.should == 'banana'
+        @driver.find('//textarea[@id="normal"]').first.value.should == 'banana'
+      end
+
+      it "should not swallow extra newlines in textarea" do
+        @driver.find('//textarea[@id="additional_newline"]').first.value.should == "\nbanana"
       end
 
       it "should allow assignment of field value" do
@@ -132,41 +136,6 @@ shared_examples_for "driver with javascript support" do
     end
   end
 
-end
-
-shared_examples_for "driver with resynchronization support" do
-  before { @driver.visit('/with_js') }
-  describe "#find" do
-    context "with synchronization turned on" do
-      before { @driver.options[:resynchronize] = true }
-      it "should wait for all ajax requests to finish" do
-        @driver.find('//input[@id="fire_ajax_request"]').first.click
-        @driver.find('//p[@id="ajax_request_done"]').should_not be_empty
-      end
-    end
-
-    context "with resynchronization turned off" do
-      before { @driver.options[:resynchronize] = false }
-      it "should not wait for ajax requests to finish" do
-        @driver.find('//input[@id="fire_ajax_request"]').first.click
-        @driver.find('//p[@id="ajax_request_done"]').should be_empty
-      end
-    end
-
-    context "with short synchronization timeout" do
-      before { @driver.options[:resynchronize] = true }
-      before { @driver.options[:resynchronization_timeout] = 0.1 }
-
-      it "should raise an error" do
-        expect do
-          @driver.find('//input[@id="fire_ajax_request"]').first.click
-        end.to raise_error(Capybara::TimeoutError, "failed to resynchronize, ajax request timed out")
-      end
-    end
-  end
-
-  after { @driver.options[:resynchronize] = false }
-  after { @driver.options[:resynchronization_timeout] = 10 }
 end
 
 shared_examples_for "driver with header support" do
@@ -307,9 +276,6 @@ shared_examples_for "driver with referer support" do
   end
 
   it "should send no referer when visiting a second page" do
-    if @driver.is_a? Capybara::RackTest::Driver
-      pending 'Rack::Test sends referer on subsequent visit'
-    end
     @driver.visit '/get_referer'
     @driver.visit '/get_referer'
     @driver.body.should include 'No referer'
@@ -318,12 +284,18 @@ shared_examples_for "driver with referer support" do
   it "should send a referer when following a link" do
     @driver.visit '/referer_base'
     @driver.find('//a[@href="/get_referer"]').first.click
-    @driver.body.should include '/referer_base'
+    @driver.body.should match %r{http://.*/referer_base}
   end
 
   it "should preserve the original referer URL when following a redirect" do
     @driver.visit('/referer_base')
     @driver.find('//a[@href="/redirect_to_get_referer"]').first.click
-    @driver.body.should include('/referer_base')
+    @driver.body.should match %r{http://.*/referer_base}
+  end
+
+  it "should send a referer when submitting a form" do
+    @driver.visit '/referer_base'
+    @driver.find('//input').first.click
+    @driver.body.should match %r{http://.*/referer_base}
   end
 end
